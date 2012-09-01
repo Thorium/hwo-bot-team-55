@@ -1,0 +1,21 @@
+Name:                hwohaskellbot
+Version:             0.1
+Synopsis:            Bootstrap bot for helloworldopen.fi in Haskell
+License:             BSD3
+License-file:        LICENSE
+Author:              Tuomas Järvensivu
+Maintainer:          tuomas.jarvensivu@reaktor.fi
+Category:            Game
+Build-type:          Simple
+Cabal-version:       >=1.2
+
+
+Executable hwohaskellbot
+   Main-is: Main.hs
+   hs-source-dirs: src
+   Build-depends:
+      base >= 4 && < 5,
+      network == 2.3.0.8,
+      aeson == 0.6.0.2,
+      bytestring
+
