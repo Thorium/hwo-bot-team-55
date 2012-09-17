@@ -40,7 +40,7 @@ handleMessage handle "joined" messageData = do
   putStrLnToStderr $ gameJoinedMessage $ parseData $ messageData
 handleMessage handle "gameIsOn" messageData = do
   putStrLn $ gameStatusMessage $ parseData $ messageData
-  moveUp handle
+  moveDirection (parseData $ messageData) handle
 handleMessage handle "gameStarted" messageData = do
   putStrLn $ gameStartedMessage $ parseData $ messageData
 handleMessage handle "gameIsOver" messageData = do
@@ -72,3 +72,8 @@ gameStatusMessage status =
         ballY = show $ Position.y $ pos $ ball $ status
 
 putStrLnToStderr = hPutStrLn stderr
+
+
+
+
+
