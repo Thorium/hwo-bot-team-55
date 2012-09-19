@@ -23,6 +23,15 @@ to stop
 
 ## Credits
 
-Copyright (C) 2012 Tuomas Järvensivu, Juha Paananen, Timo Rantalaiho, Sami Rosendahl, Jussi Vesala
+Bot Copyright (C) 2012 Tuomas Hietanen
+
+Template from https://github.com/helloworldopen ,
+Template Copyright (C) 2012 Tuomas Järvensivu, Juha Paananen, Timo Rantalaiho, Sami Rosendahl, Jussi Vesala
 
 Distributed under the Apache-2.0 license http://www.apache.org/licenses/LICENSE-2.0.html
+
+## Comments
+
+Some specifications pictures in the specs-folder.
+
+This is my first Haskell program. Nice language. I prefer OCaml pattern matching syntax so far... ;-)
