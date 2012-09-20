@@ -8,8 +8,6 @@ NOTICE: The test server enforces a threshold of 10 messages per client in a seco
 
 [cabal](http://www.haskell.org/cabal/)
 
-You must run `cabal update && cabal install --only-dependencies` at least once before building the bot.
-
 ## Usage
 
 to build:
