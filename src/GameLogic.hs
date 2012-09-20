@@ -95,13 +95,12 @@ moveStop handle =
   where direction = (0.0) :: Float
 
 	
-moveDirection :: GameStatus -> Handle -> IO()
-moveDirection status handle
+moveDirection :: GameStatus -> GameStatus -> Handle -> IO()
+moveDirection previousStatus status handle
     | paddleDirection == 0 = moveStop handle
     | paddleDirection > 0 = moveUp handle
     | paddleDirection < 0 = moveDown handle
     where
-       previousStatus = status -- TODO: State monad to give the previous state
        goal = case (time previousStatus) == (time status) of
             True -> Position.y $ pos $ ball $ status
             False -> case selectMode status previousStatus of
