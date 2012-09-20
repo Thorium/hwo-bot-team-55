@@ -16,11 +16,9 @@ main = do
   getArgs >>= startApplication
 
 startApplication (name:host:port:duel:_) =
-  let connectToHost = connectSocket host (read port :: Integer)
-  in
-  case duel of
-     "" -> connectToHost >>= (startGame name)
-     opponentName -> connectToHost >>= (startDuel [name,opponentName])
+  connectSocket host (read port :: Integer) >>= (startDuel [name,opponentName])
+startApplication (name:host:port:_) =
+  connectSocket host (read port :: Integer) >>= (startGame name)
 startApplication _ =
   getProgName >>=
     (\progName -> putStrLnToStderr $ "\nUsage: " ++ (show progName) ++ " <name> <host> <port> (<duelOpponent>)")
@@ -42,7 +40,7 @@ messagePairs mylist = zipWith (,) mylist (tail mylist)
 handleMessages handle = do
 
   lines <- liftM (L.split '\n') $ L.hGetContents handle
-  //TODO: Some cleanup.
+  --TODO: Some cleanup.
   forM_ (messagePairs lines) $ \msg -> do
     case decodeMessage $ fst $ msg of
       Just ("gameIsOn", messageData1) -> do
