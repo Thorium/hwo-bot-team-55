@@ -16,7 +16,7 @@ main = do
   getArgs >>= startApplication
 
 startApplication (name:host:port:duel:_) =
-  connectSocket host (read port :: Integer) >>= (startDuel [name,opponentName])
+  connectSocket host (read port :: Integer) >>= (startDuel (name,duel))
 startApplication (name:host:port:_) =
   connectSocket host (read port :: Integer) >>= (startGame name)
 startApplication _ =
@@ -42,6 +42,7 @@ handleMessages handle = do
   lines <- liftM (L.split '\n') $ L.hGetContents handle
   --TODO: Some cleanup.
   forM_ (messagePairs lines) $ \msg -> do
+    writeFile "log/game.txt" (show $ fst $ msg)
     case decodeMessage $ fst $ msg of
       Just ("gameIsOn", messageData1) -> do
         putStrLn $ gameStatusMessage $ parseData $ messageData1
@@ -50,10 +51,11 @@ handleMessages handle = do
             moveDirection (parseData $ messageData1) (parseData $ messageData2) handle
           Just (messageType, messageData) -> do
             handleMessage handle messageType messageData
-          Nothing -> fail $ "Error parsing JSON: " ++ (show msg)
+          Nothing -> do
+            putStrLn $ "\n"
       Just (messageType, messageData) -> do
         handleMessage handle messageType messageData
-      Nothing -> fail $ "Error parsing JSON: " ++ (show msg)
+      Nothing -> fail $ "Error parsing JSON1: " ++ (show msg)
   
 handleMessage :: Handle -> String -> Value -> IO ()
 handleMessage handle "joined" messageData = do
