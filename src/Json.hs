@@ -9,6 +9,7 @@ import qualified Data.Aeson.Generic as GJ
 send :: ToJSON a => Handle -> String -> a -> IO ()
 send handle msgType msgData = do
   let json = encode $ object ["msgType" .= msgType, "data" .= msgData]
+  appendFile "log/game.txt" (show $ json)
   L.hPut handle $ json
   hPutChar handle '\n'
   hFlush handle

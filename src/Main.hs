@@ -51,7 +51,7 @@ handleMessages handle = do
 
   lines <- liftM (L.split '\n') $ L.hGetContents handle
   forM_ (messagePairs lines) $ \msg -> do
-    writeFile "log/game.txt" (show $ fst $ msg)
+    appendFile "log/game.txt" (show $ fst $ msg)
     decodeMessagePair msg handle
 
 handleMessage :: Handle -> String -> Value -> IO ()
