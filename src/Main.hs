@@ -40,16 +40,18 @@ messagePairs mylist = zipWith (,) mylist (tail mylist)
 decodeMessagePair :: (L.ByteString,L.ByteString) -> Handle -> IO()
 decodeMessagePair pair handle = 
     case decodeMessage pair of
-      (Just("gameIsOn", messageData1),Just("gameIsOn", messageData2)) -> 
-        moveDirection (parseData $ messageData1) (parseData $ messageData2) handle
-
-      (Just("gameIsOn", messageData),_) -> putStrLn $ "\n Waiting more messages... \n"
-      (Just(messageType, messageData),_) -> handleMessage handle messageType messageData
+      (Just(messageType, messageData1),Just(messageType2, messageData2)) 
+        | messageType == "gameIsOn" -> 
+            moveDirection (parseData $ messageData1) (parseData $ messageData2) handle
+      (Just(messageType, messageData),_)
+        | messageType == "gameIsOn" -> putStrLn $ "\n Waiting more messages... \n"
+        | otherwise -> handleMessage handle messageType messageData
       (Nothing,_) -> fail $ "Error parsing JSON1: " ++ (show $ fst $ pair)
       
 handleMessages handle = do
 
   lines <- liftM (L.split '\n') $ L.hGetContents handle
+  -- appendFile "log/lines.txt" (show $ lines)
   forM_ (messagePairs lines) $ \msg -> do
     appendFile "log/game.txt" (show $ fst $ msg)
     decodeMessagePair msg handle
@@ -90,8 +92,4 @@ gameStatusMessage status =
         timestamp = show $ time $ status
 
 putStrLnToStderr = hPutStrLn stderr
-
-
-
-
 

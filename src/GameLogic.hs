@@ -58,7 +58,7 @@ paddleGoalAttack =
 -}
   
 selectMode :: GameStatus -> GameStatus -> PaddleMode
-selectMode previousStatus status =
+selectMode previousStatus status = 
     let comingMyWay = (px >= cx)
         distanceTravelled = sqrt((cx - px) ^ 2 + (cy - py) ^2)
         fromBottom = boardHeight - cy
@@ -66,9 +66,9 @@ selectMode previousStatus status =
         boardWidth = maxWidth $ conf $ status
     in
     case (nearTheWall, comingMyWay) of
-      (_, False) -> Loiter
-      (False, _) -> Defence
-      (True, _) -> WaitForMoreInfo
+       (_, False) -> Loiter
+       (False, _) -> Defence
+       (True, _) -> WaitForMoreInfo
     where 
       cx = Position.x $ pos $ ball $ status
       px = Position.x $ pos $ ball $ previousStatus
@@ -93,20 +93,25 @@ moveDirection previousStatus status handle =
       Nothing -> do putStrLn $ "...wait..."
       Just(pdir)
         | pdir > tolerance ->
+            --putStrLn $ "move up " ++ (show pdir) ++ " a " ++ (show $ Domain.y $ left $ status) ++ " mode "
             movePaddle handle (-1.0) -- move up
         | pdir < -tolerance -> 
+            --putStrLn $ "move down "++ (show pdir) ++ " a "  ++ (show $ Domain.y $ left $ status) ++ " mode "
             movePaddle handle (1.0) -- move down
         | otherwise -> 
+            --putStrLn $ "stop " ++ (show $ Domain.y $ left $ status) ++ " mode "
             movePaddle handle (0.0) -- stop
     where
         paddleCenter = fromIntegral (paddleWidth $ conf $ status) /2
         tolerance = fromIntegral $ ballRadius $ conf $ status
-        paddleDirection = case selectMode previousStatus status of
+        paddleMode = selectMode previousStatus status
+        paddleDirection = case paddleMode of
             Loiter -> 
-                Just $ (Domain.y $ left $ status) - paddleCenter - (positionToLoiter status)
+                Just $ (Domain.y $ left $ status) - (positionToLoiter status)
             --Attack -> Just(fromIntegral $ positionToDefence status previousStatus)
             Defence -> 
-                Just $ (Domain.y $ left $ status) - paddleCenter - (fromIntegral $ positionToDefence status previousStatus)
+                Just $ (Domain.y $ left $ status) - (fromIntegral $ positionToDefence status previousStatus)
             WaitForMoreInfo -> 
                 --putStrLn $ "\n Waiting more info... \n"
                 Nothing
+
