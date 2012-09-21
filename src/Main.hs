@@ -35,17 +35,25 @@ startDuel names handle = do
 
 
 messagePairs :: [L.ByteString] -> [(L.ByteString,L.ByteString)]
-messagePairs mylist = zipWith (,) mylist (tail mylist)
+messagePairs mylist = 
+    zipWith (,) mylist (tail mylist)
   
-decodeMessagePair :: (L.ByteString,L.ByteString) -> Handle -> IO()
+--decodeMessagePair :: (L.ByteString,L.ByteString) -> Handle -> IO()
 decodeMessagePair pair handle = 
     case decodeMessage pair of
       (Just(messageType, messageData1),Just(messageType2, messageData2)) 
-        | messageType == "gameIsOn" -> 
-            moveDirection (parseData $ messageData1) (parseData $ messageData2) handle
+        | messageType == "gameIsOn" -> do
+            putStrLn $ gameStatusMessage $ parseData $ messageData1 
+            moveDirection  (parseData $ messageData1) (parseData $ messageData2) handle
+            handleMessages handle
       (Just(messageType, messageData),_)
-        | messageType == "gameIsOn" -> putStrLn $ "\n Waiting more messages... \n"
-        | otherwise -> handleMessage handle messageType messageData
+        | messageType == "gameIsOn" -> do
+            putStrLn "Got first game on message..."
+            putStrLn $ gameStatusMessage $ parseData $ messageData
+            handleMessages handle
+        | otherwise -> 
+            handleMessage handle messageType messageData
+            handleMessages handle
       (Nothing,_) -> fail $ "Error parsing JSON1: " ++ (show $ fst $ pair)
       
 handleMessages handle = do
@@ -53,7 +61,7 @@ handleMessages handle = do
   lines <- liftM (L.split '\n') $ L.hGetContents handle
   -- appendFile "log/lines.txt" (show $ lines)
   forM_ (messagePairs lines) $ \msg -> do
-    appendFile "log/game.txt" (show $ fst $ msg)
+    -- appendFile "log/game.txt" (show $ fst $ msg)
     decodeMessagePair msg handle
 
 handleMessage :: Handle -> String -> Value -> IO ()
