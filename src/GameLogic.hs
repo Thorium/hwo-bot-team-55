@@ -9,15 +9,16 @@ import Json
 import Position
 import Domain
 {-
-  Kolme modea:
+  Neljä modea:
     Loiter  - Pallo menee pois päin, joten nou hätä... 
 	          + Mennään pallon ja laudan puoleen väliin.
     Defence - Pallo tulee kaukaa kohti
 	          + Lasketaan paikka, johon pallo on tulossa.
     Attack  - Pallo lähellä, valitaan mihin kohtaan lyödään. 
 	          + Yritetään 0-n pompulla siihen kulmaan, jossa vastustajan maila ei ole.
+    WaitForMoreInfo - Kaikki okei, odotetaan lisää viestejä palvelimelta
 -}
-data PaddleMode = Loiter | Defence | Attack
+data PaddleMode = Loiter | Defence | Attack | WaitForMoreInfo
 
 positionToLoiter :: GameStatus -> Float
 positionToLoiter status = 
@@ -29,7 +30,6 @@ positionToLoiter status =
   (halfBoard + (Position.y $ currentBallPosition)) /2
 
 -- Paikka johon pallo tulee menemään...
--- TODO: suoraan tarvitaan itse asiassa 3 pistettä, ettei pallo ole kimmonnut seinästä välillä...
 positionToDefence :: GameStatus -> GameStatus -> Int
 positionToDefence status previousStatus = 
   -- pallon liike
@@ -58,20 +58,24 @@ paddleGoalAttack =
 -}
   
 selectMode :: GameStatus -> GameStatus -> PaddleMode
-selectMode status previousStatus =
-    let currentBallXPosition = Position.x $ pos $ ball $ status
-        previousBallXPosition = Position.x $ pos $ ball $ previousStatus
-        comingMyWay = (previousBallXPosition >= currentBallXPosition)
+selectMode previousStatus status =
+    let comingMyWay = (px >= cx)
+        distanceTravelled = sqrt((cx - px) ^ 2 + (cy - py) ^2)
+        fromBottom = boardHeight - cy
+        nearTheWall = (cy < distanceTravelled) || (fromBottom < distanceTravelled)
         boardWidth = maxWidth $ conf $ status
-        optimiHyokkaysPiste = 0.0 --TODO: Optimoi
-        optimiPuolustusPiste = fromIntegral boardWidth --TODO: Optimoi
     in
-    case (currentBallXPosition, comingMyWay) of
+    case (nearTheWall, comingMyWay) of
       (_, False) -> Loiter
-      (x, _) 
-             | x < optimiHyokkaysPiste -> Attack
-             | x > optimiPuolustusPiste -> Loiter
-             | otherwise -> Defence
+      (False, _) -> Defence
+      (True, _) -> WaitForMoreInfo
+    where 
+      cx = Position.x $ pos $ ball $ status
+      px = Position.x $ pos $ ball $ previousStatus
+      cy = Position.y $ pos $ ball $ status
+      py = Position.y $ pos $ ball $ previousStatus
+      boardHeight :: Float
+      boardHeight = fromIntegral $ maxHeight $ conf $ status
 
 
 --speedIntervalCalculation = 
@@ -79,33 +83,30 @@ selectMode status previousStatus =
 --   vauhti jolla haluttu paikka saavutetaan
 --   (paikka - nykypaikka) / intervallimuutos 
 
-moveUp :: Handle -> IO ()
-moveUp handle =
-  send handle "changeDir" direction
-  where direction = (-1.0) :: Float
+movePaddle :: Handle -> Float -> IO()
+movePaddle handle speed = 
+    send handle "changeDir" speed
 
-moveDown :: Handle -> IO ()
-moveDown handle =
-  send handle "changeDir" direction
-  where direction = (1.0) :: Float
-
-moveStop :: Handle -> IO ()
-moveStop handle =
-  send handle "changeDir" direction
-  where direction = (0.0) :: Float
-
-	
 moveDirection :: GameStatus -> GameStatus -> Handle -> IO()
-moveDirection previousStatus status handle
-    | paddleDirection == 0 = moveStop handle
-    | paddleDirection > 0 = moveUp handle
-    | paddleDirection < 0 = moveDown handle
+moveDirection previousStatus status handle =
+    case paddleDirection of
+      Nothing -> do putStrLn $ "...wait..."
+      Just(pdir)
+        | pdir > tolerance ->
+            movePaddle handle (-1.0) -- move up
+        | pdir < -tolerance -> 
+            movePaddle handle (1.0) -- move down
+        | otherwise -> 
+            movePaddle handle (0.0) -- stop
     where
-       goal = case (time previousStatus) == (time status) of
-            True -> Position.y $ pos $ ball $ status
-            False -> case selectMode status previousStatus of
-                        Loiter -> positionToLoiter status
-                        Attack -> (fromIntegral $ positionToDefence status previousStatus)
-                        Defence -> (fromIntegral $ positionToDefence status previousStatus)
-       paddleCenter = fromIntegral (paddleWidth $ conf $ status) /2
-       paddleDirection = (Domain.y $ left $ status) - paddleCenter - (fromIntegral $ positionToDefence status previousStatus)
+        paddleCenter = fromIntegral (paddleWidth $ conf $ status) /2
+        tolerance = fromIntegral $ ballRadius $ conf $ status
+        paddleDirection = case selectMode previousStatus status of
+            Loiter -> 
+                Just $ (Domain.y $ left $ status) - paddleCenter - (positionToLoiter status)
+            --Attack -> Just(fromIntegral $ positionToDefence status previousStatus)
+            Defence -> 
+                Just $ (Domain.y $ left $ status) - paddleCenter - (fromIntegral $ positionToDefence status previousStatus)
+            WaitForMoreInfo -> 
+                --putStrLn $ "\n Waiting more info... \n"
+                Nothing

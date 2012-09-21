@@ -13,7 +13,9 @@ send handle msgType msgData = do
   hPutChar handle '\n'
   hFlush handle
 
-decodeMessage message = decode message >>= (fromOk . fromJSON)
+decodeMessage :: (L.ByteString,L.ByteString) -> (Maybe(String,Value),Maybe(String,Value))
+decodeMessage (msg1, msg2) = 
+    (dec msg1, dec msg2) where dec message = decode message >>= (fromOk . fromJSON)
 
 parseData messageData = fromOk $ GJ.fromJSON messageData
 

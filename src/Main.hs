@@ -36,27 +36,24 @@ startDuel names handle = do
 
 messagePairs :: [L.ByteString] -> [(L.ByteString,L.ByteString)]
 messagePairs mylist = zipWith (,) mylist (tail mylist)
+  
+decodeMessagePair :: (L.ByteString,L.ByteString) -> Handle -> IO()
+decodeMessagePair pair handle = 
+    case decodeMessage pair of
+      (Just("gameIsOn", messageData1),Just("gameIsOn", messageData2)) -> 
+        moveDirection (parseData $ messageData1) (parseData $ messageData2) handle
 
+      (Just("gameIsOn", messageData),_) -> putStrLn $ "\n Waiting more messages... \n"
+      (Just(messageType, messageData),_) -> handleMessage handle messageType messageData
+      (Nothing,_) -> fail $ "Error parsing JSON1: " ++ (show $ fst $ pair)
+      
 handleMessages handle = do
 
   lines <- liftM (L.split '\n') $ L.hGetContents handle
-  --TODO: Some cleanup.
   forM_ (messagePairs lines) $ \msg -> do
     writeFile "log/game.txt" (show $ fst $ msg)
-    case decodeMessage $ fst $ msg of
-      Just ("gameIsOn", messageData1) -> do
-        putStrLn $ gameStatusMessage $ parseData $ messageData1
-        case decodeMessage $ snd $ msg of
-          Just ("gameIsOn", messageData2) -> do
-            moveDirection (parseData $ messageData1) (parseData $ messageData2) handle
-          Just (messageType, messageData) -> do
-            handleMessage handle messageType messageData
-          Nothing -> do
-            putStrLn $ "\n"
-      Just (messageType, messageData) -> do
-        handleMessage handle messageType messageData
-      Nothing -> fail $ "Error parsing JSON1: " ++ (show msg)
-  
+    decodeMessagePair msg handle
+
 handleMessage :: Handle -> String -> Value -> IO ()
 handleMessage handle "joined" messageData = do
   putStrLnToStderr $ gameJoinedMessage $ parseData $ messageData
