@@ -42,7 +42,7 @@ messagePairs mylist =
 decodeMessagePair pair handle = 
     case decodeMessage pair of
       (Just(messageType, messageData1),Just(messageType2, messageData2)) 
-        | messageType == "gameIsOn" -> do
+        | (messageType == "gameIsOn" && messageType2 == "gameIsOn") -> do
             putStrLn $ gameStatusMessage $ parseData $ messageData1 
             moveDirection  (parseData $ messageData1) (parseData $ messageData2) handle
             handleMessages handle
@@ -51,7 +51,7 @@ decodeMessagePair pair handle =
             putStrLn "Got first game on message..."
             putStrLn $ gameStatusMessage $ parseData $ messageData
             handleMessages handle
-        | otherwise -> 
+        | otherwise ->  do
             handleMessage handle messageType messageData
             handleMessages handle
       (Nothing,_) -> fail $ "Error parsing JSON1: " ++ (show $ fst $ pair)

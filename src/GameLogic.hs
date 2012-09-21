@@ -90,7 +90,7 @@ movePaddle handle speed =
 moveDirection :: GameStatus -> GameStatus -> Handle -> IO()
 moveDirection previousStatus status handle =
     case paddleDirection of
-      Nothing ->  movePaddle handle (0.0) -- do putStrLn $ "...wait..."
+      Nothing -> do putStrLn $ "...wait..."
       Just(pdir)
         | pdir > tolerance ->
             --putStrLn $ "move up " ++ (show pdir) ++ " a " ++ (show $ Domain.y $ left $ status) ++ " mode "
