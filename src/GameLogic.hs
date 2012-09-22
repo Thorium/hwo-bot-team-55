@@ -35,7 +35,10 @@ positionToDefence status previousStatus =
   -- pallon liike
   let ballMotionSlope = - (cy - py) / (cx - px)
       positionToHitPaddleWithNoWalls = ballMotionSlope * cx + cy
-      timesToHitWall = truncate (positionToHitPaddleWithNoWalls / boardHeight)
+      timesToHitWallPositive = truncate (positionToHitPaddleWithNoWalls / boardHeight)
+      timesToHitWall = case positionToHitPaddleWithNoWalls < 0 of
+                                True -> timesToHitWallPositive - 1 -- There is wall in y = 0 also...
+                                False -> timesToHitWallPositive
       positionToHitPaddle = positionToHitPaddleWithNoWalls - fromIntegral(timesToHitWall)*boardHeight
   in
   case even timesToHitWall of
@@ -121,7 +124,7 @@ moveDirection previousStatus status handle currentSpeed = do
         paddleMode = selectMode previousStatus status
         paddlePosition = Domain.y $ left $ status
         paddleSize = fromIntegral $ paddleHeight $ conf $ status
-        nearTheEdge = paddlePosition < paddleSize || paddlePosition > boardSize - paddleSize * 2
+        nearTheEdge = paddlePosition < paddleSize * 1.5 || paddlePosition > boardSize - paddleSize * 2.5
         inStartPosition = boardSize / 2 == paddlePosition
         paddleDirection = case paddleMode of
             Loiter -> 
