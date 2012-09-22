@@ -42,12 +42,13 @@ positionToDefence status previousStatus =
     True -> positionToHitPaddle
     False -> boardHeight - positionToHitPaddle
   where
-    cx = Position.x $ pos $ ball $ status :: Float
-    px = Position.x $ pos $ ball $ previousStatus :: Float
+    boardHeight = fromIntegral $ maxHeight $ conf $ status :: Float
+    coordinateZero = fromIntegral $ paddleWidth $ conf $ status :: Float
+    cx = (Position.x $ pos $ ball $ status :: Float) - coordinateZero
+    px = (Position.x $ pos $ ball $ previousStatus :: Float) - coordinateZero
     cy = Position.y $ pos $ ball $ status :: Float
     py = Position.y $ pos $ ball $ previousStatus :: Float
-    boardHeight = fromIntegral $ maxHeight $ conf $ status :: Float
-      
+    
 {-    
 paddleGoalAttack :: GameStatus -> Float
 paddleGoalAttack = 
@@ -113,14 +114,16 @@ moveDirection previousStatus status handle currentSpeed = do
                otherwise -> movePaddle handle (0.0) -- stop
     where
         paddleCenter = fromIntegral (paddleWidth $ conf $ status) /2
-        tolerance = fromIntegral $ ballRadius $ conf $ status
+        ballSize = fromIntegral $ ballRadius $ conf $ status
+        tolerance = case ballSize < 6 of True -> ballSize
+                                         False -> 6.0
         paddleMode = selectMode previousStatus status
         paddleDirection = case paddleMode of
             Loiter -> 
-                Just $ (Domain.y $ left $ status) - (positionToLoiter status)
+                Just $ (Domain.y $ left $ status) + paddleCenter - (positionToLoiter status)
             --Attack -> Just(fromIntegral $ positionToDefence status previousStatus)
             Defence -> 
-                Just $ (Domain.y $ left $ status) - (positionToDefence status previousStatus)
+                Just $ (Domain.y $ left $ status) + paddleCenter - (positionToDefence status previousStatus)
             WaitForMoreInfo -> 
                 --putStrLn $ "\n Waiting more info... \n"
                 Nothing
