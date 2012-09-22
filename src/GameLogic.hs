@@ -65,10 +65,11 @@ selectMode previousStatus status =
         nearTheWall = (cy < distanceTravelled) || (fromBottom < distanceTravelled)
         boardWidth = maxWidth $ conf $ status
     in
-    case (nearTheWall, comingMyWay) of
-       (_, False) -> Loiter
-       (False, _) -> Defence
-       (True, _) -> WaitForMoreInfo
+    case (nearTheWall, comingMyWay, timeStampOk) of
+       (_, _, False) -> WaitForMoreInfo
+       (_, False, _) -> Loiter
+       (False, _, _) -> Defence
+       (True, _, _) -> WaitForMoreInfo
     where 
       cx = Position.x $ pos $ ball $ status
       px = Position.x $ pos $ ball $ previousStatus
@@ -76,31 +77,40 @@ selectMode previousStatus status =
       py = Position.y $ pos $ ball $ previousStatus
       boardHeight :: Float
       boardHeight = fromIntegral $ maxHeight $ conf $ status
-
+      timeStampOk = (time $ status) > (time $ previousStatus)
 
 --speedIntervalCalculation = 
 --   nykyinen intervalli miinus aiempi intervalli
 --   vauhti jolla haluttu paikka saavutetaan
 --   (paikka - nykypaikka) / intervallimuutos 
 
-movePaddle :: Handle -> Float -> IO()
-movePaddle handle speed = 
+movePaddle :: Handle -> Float -> IO Float
+movePaddle handle speed = do
     send handle "changeDir" speed
+    return speed
 
-moveDirection :: GameStatus -> GameStatus -> Handle -> IO()
-moveDirection previousStatus status handle =
+moveDirection :: GameStatus -> GameStatus -> Handle -> Float -> IO Float
+moveDirection previousStatus status handle currentSpeed = do
     case paddleDirection of
-      Nothing -> do putStrLn $ "...wait..."
+      Nothing -> 
+         do putStrLn "...wait..."
+            return currentSpeed
       Just(pdir)
-        | pdir > tolerance ->
+        | pdir > tolerance -> 
             --putStrLn $ "move up " ++ (show pdir) ++ " a " ++ (show $ Domain.y $ left $ status) ++ " mode "
-            movePaddle handle (-1.0) -- move up
-        | pdir < -tolerance -> 
-            --putStrLn $ "move down "++ (show pdir) ++ " a "  ++ (show $ Domain.y $ left $ status) ++ " mode "
-            movePaddle handle (1.0) -- move down
+            case currentSpeed of
+               (-1.0) -> return currentSpeed 
+               otherwise -> movePaddle handle (-1.0) -- move up
+        | pdir < -tolerance ->
+            case currentSpeed of
+               (1.0) -> return currentSpeed
+               --putStrLn $ "move down "++ (show pdir) ++ " a "  ++ (show $ Domain.y $ left $ status) ++ " mode "
+               otherwise -> movePaddle handle (1.0) -- move down
         | otherwise -> 
-            --putStrLn $ "stop " ++ (show $ Domain.y $ left $ status) ++ " mode "
-            movePaddle handle (0.0) -- stop
+            case currentSpeed of
+               (0.0) -> return currentSpeed
+               --putStrLn $ "stop " ++ (show $ Domain.y $ left $ status) ++ " mode "
+               otherwise -> movePaddle handle (0.0) -- stop
     where
         paddleCenter = fromIntegral (paddleWidth $ conf $ status) /2
         tolerance = fromIntegral $ ballRadius $ conf $ status
@@ -114,4 +124,3 @@ moveDirection previousStatus status handle =
             WaitForMoreInfo -> 
                 --putStrLn $ "\n Waiting more info... \n"
                 Nothing
-

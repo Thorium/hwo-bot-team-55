@@ -26,43 +26,45 @@ startApplication _ =
 connectSocket host port = connectTo host (PortNumber $ fromInteger port)
 
 startGame name handle = do
+  --putStrLnToStderr $ "\nStarting battle... "
   send handle "join" name
-  handleMessages handle
+  handleMessages handle 0.0
 
 startDuel names handle = do
+  --putStrLnToStderr $ "\nStarting duel... "
   send handle "requestDuel" names
-  handleMessages handle
+  handleMessages handle 0.0
 
 
 messagePairs :: [L.ByteString] -> [(L.ByteString,L.ByteString)]
 messagePairs mylist = 
     zipWith (,) mylist (tail mylist)
   
---decodeMessagePair :: (L.ByteString,L.ByteString) -> Handle -> IO()
-decodeMessagePair pair handle = 
+decodeMessagePair :: (L.ByteString,L.ByteString) -> Handle -> Float -> IO()
+decodeMessagePair pair handle currentSpeed = 
     case decodeMessage pair of
       (Just(messageType, messageData1),Just(messageType2, messageData2)) 
         | (messageType == "gameIsOn" && messageType2 == "gameIsOn") -> do
             putStrLn $ gameStatusMessage $ parseData $ messageData1 
-            moveDirection  (parseData $ messageData1) (parseData $ messageData2) handle
-            handleMessages handle
+            newSpeed <- moveDirection (parseData $ messageData1) (parseData $ messageData2) handle currentSpeed
+            handleMessages handle newSpeed
       (Just(messageType, messageData),_)
         | messageType == "gameIsOn" -> do
             putStrLn "Got first game on message..."
             putStrLn $ gameStatusMessage $ parseData $ messageData
-            handleMessages handle
+            handleMessages handle currentSpeed
         | otherwise ->  do
             handleMessage handle messageType messageData
-            handleMessages handle
+            handleMessages handle currentSpeed
       (Nothing,_) -> fail $ "Error parsing JSON1: " ++ (show $ fst $ pair)
-      
-handleMessages handle = do
+
+handleMessages handle currentSpeed = do
 
   lines <- liftM (L.split '\n') $ L.hGetContents handle
   -- appendFile "log/lines.txt" (show $ lines)
   forM_ (messagePairs lines) $ \msg -> do
     -- appendFile "log/game.txt" (show $ fst $ msg)
-    decodeMessagePair msg handle
+    decodeMessagePair msg handle currentSpeed
 
 handleMessage :: Handle -> String -> Value -> IO ()
 handleMessage handle "joined" messageData = do
