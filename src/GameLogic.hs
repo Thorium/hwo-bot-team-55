@@ -82,7 +82,7 @@ selectMode previousStatus status =
        (_, _, False) -> WaitForMoreInfo
        (_, False, _) -> Loiter
        (False, _, _) -> Defence
-       (True, _, _) | cx < boardWidthCenter -> NearTheWall
+       (True, _, _) | cx < myCorner -> NearTheWall
                     | otherwise -> WaitForMoreInfo
     where 
       ballCenter = (/) ((fromIntegral $ ballRadius $ conf $ status)::Float) 2
@@ -92,7 +92,7 @@ selectMode previousStatus status =
       py = (Position.y $ pos $ ball $ previousStatus) + ballCenter
       boardHeight :: Float
       boardHeight = fromIntegral $ maxHeight $ conf $ status
-      boardWidthCenter = (fromIntegral $ maxWidth $ conf $ status) / 2
+      myCorner = (fromIntegral $ maxWidth $ conf $ status) / 4
       timeStampOk = (time $ status) > (time $ previousStatus)
 
 --speedIntervalCalculation = 
@@ -114,17 +114,19 @@ moveDirection previousStatus status handle currentSpeed = do
       Just(pdir)
         | pdir > tolerance -> 
             --putStrLn $ "move up " ++ (show pdir) ++ " a " ++ (show $ Domain.y $ left $ status) ++ " mode "
-            case (currentSpeed, nearTheEdge || inStartPosition) of
-               (-1.0, False) -> return currentSpeed 
+            case (currentSpeed, nearTheEdge, inStartPosition) of
+               (-1.0, False, False) -> return currentSpeed 
+               (_, True, False) -> movePaddle handle (-0.75) 
                otherwise -> movePaddle handle (-1.0) -- move up
         | pdir < -tolerance ->
-            case (currentSpeed, nearTheEdge || inStartPosition) of
-               (1.0, False) -> return currentSpeed
+            case (currentSpeed, nearTheEdge, inStartPosition) of
+               (1.0, False, False) -> return currentSpeed
+               (_, True, False) -> movePaddle handle (0.75)
                --putStrLn $ "move down "++ (show pdir) ++ " a "  ++ (show $ Domain.y $ left $ status) ++ " mode "
                otherwise -> movePaddle handle (1.0) -- move down
         | otherwise -> 
-            case (currentSpeed, nearTheEdge || inStartPosition) of
-               (0.0, False) -> return currentSpeed
+            case (currentSpeed, nearTheEdge, inStartPosition) of
+               (0.0, False, False) -> return currentSpeed
                --putStrLn $ "stop " ++ (show $ Domain.y $ left $ status) ++ " mode "
                otherwise -> movePaddle handle (0.0) -- stop
     where
