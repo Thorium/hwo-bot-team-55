@@ -30,23 +30,23 @@ positionToLoiter status =
   (halfBoard + (Position.y $ currentBallPosition)) /2
 
 -- Paikka johon pallo tulee menemään...
-positionToDefence :: GameStatus -> GameStatus -> Int
+positionToDefence :: GameStatus -> GameStatus -> Float
 positionToDefence status previousStatus = 
   -- pallon liike
-  let intervalsToHitPaddle = (cx - px) / cx
-      positionToHitPaddleWithNoWalls = round $ cy + intervalsToHitPaddle * (cy - py)
-      timesToHitWall = positionToHitPaddleWithNoWalls `quot` boardHeight
-      positionToHitPaddle = positionToHitPaddleWithNoWalls `rem` boardHeight
+  let ballMotionSlope = - (cy - py) / (cx - px)
+      positionToHitPaddleWithNoWalls = ballMotionSlope * cx + cy
+      timesToHitWall = truncate (positionToHitPaddleWithNoWalls / boardHeight)
+      positionToHitPaddle = positionToHitPaddleWithNoWalls - fromIntegral(timesToHitWall)*boardHeight
   in
   case even timesToHitWall of
     True -> positionToHitPaddle
     False -> boardHeight - positionToHitPaddle
   where
-    cx = Position.x $ pos $ ball $ status
-    px = Position.x $ pos $ ball $ previousStatus
-    cy = Position.y $ pos $ ball $ status
-    py = Position.y $ pos $ ball $ previousStatus
-    boardHeight = maxHeight $ conf $ status
+    cx = Position.x $ pos $ ball $ status :: Float
+    px = Position.x $ pos $ ball $ previousStatus :: Float
+    cy = Position.y $ pos $ ball $ status :: Float
+    py = Position.y $ pos $ ball $ previousStatus :: Float
+    boardHeight = fromIntegral $ maxHeight $ conf $ status :: Float
       
 {-    
 paddleGoalAttack :: GameStatus -> Float
@@ -120,7 +120,7 @@ moveDirection previousStatus status handle currentSpeed = do
                 Just $ (Domain.y $ left $ status) - (positionToLoiter status)
             --Attack -> Just(fromIntegral $ positionToDefence status previousStatus)
             Defence -> 
-                Just $ (Domain.y $ left $ status) - (fromIntegral $ positionToDefence status previousStatus)
+                Just $ (Domain.y $ left $ status) - (positionToDefence status previousStatus)
             WaitForMoreInfo -> 
                 --putStrLn $ "\n Waiting more info... \n"
                 Nothing
