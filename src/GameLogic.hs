@@ -14,11 +14,18 @@ import Domain
 	          + Mennään pallon ja laudan puoleen väliin.
     Defence - Pallo tulee kaukaa kohti
 	          + Lasketaan paikka, johon pallo on tulossa.
-    Attack  - Pallo lähellä, valitaan mihin kohtaan lyödään. 
-	          + Yritetään 0-n pompulla siihen kulmaan, jossa vastustajan maila ei ole.
+    NearTheWall  - Pallo lähellä ja kulmassa, mailat kimpoilee seinistä. 
+              + Yritetään vaan saada pallo kiinni
     WaitForMoreInfo - Kaikki okei, odotetaan lisää viestejä palvelimelta
 -}
-data PaddleMode = Loiter | Defence | Attack | WaitForMoreInfo
+data PaddleMode = Loiter | Defence | NearTheWall | WaitForMoreInfo
+
+positionNearTheWall :: GameStatus -> Float
+positionNearTheWall status = 
+      let ballSize = fromIntegral $ ballRadius $ conf $ status
+          ballCenter = ballSize / 2
+      in
+      (Position.y $ pos $ ball $ status :: Float) + ballCenter
 
 positionToLoiter :: GameStatus -> Float
 positionToLoiter status = 
@@ -45,12 +52,14 @@ positionToDefence status previousStatus =
     True -> positionToHitPaddle
     False -> boardHeight - positionToHitPaddle
   where
+    ballSize = fromIntegral $ ballRadius $ conf $ status
+    ballCenter = ballSize / 2
     boardHeight = fromIntegral $ maxHeight $ conf $ status :: Float
     coordinateZero = fromIntegral $ paddleWidth $ conf $ status :: Float
     cx = (Position.x $ pos $ ball $ status :: Float) - coordinateZero
     px = (Position.x $ pos $ ball $ previousStatus :: Float) - coordinateZero
-    cy = Position.y $ pos $ ball $ status :: Float
-    py = Position.y $ pos $ ball $ previousStatus :: Float
+    cy = (Position.y $ pos $ ball $ status :: Float) + ballCenter
+    py = (Position.y $ pos $ ball $ previousStatus :: Float) + ballCenter
     
 {-    
 paddleGoalAttack :: GameStatus -> Float
@@ -73,14 +82,17 @@ selectMode previousStatus status =
        (_, _, False) -> WaitForMoreInfo
        (_, False, _) -> Loiter
        (False, _, _) -> Defence
-       (True, _, _) -> WaitForMoreInfo
+       (True, _, _) | cx < boardWidthCenter -> NearTheWall
+                    | otherwise -> WaitForMoreInfo
     where 
+      ballCenter = (/) ((fromIntegral $ ballRadius $ conf $ status)::Float) 2
       cx = Position.x $ pos $ ball $ status
       px = Position.x $ pos $ ball $ previousStatus
-      cy = Position.y $ pos $ ball $ status
-      py = Position.y $ pos $ ball $ previousStatus
+      cy = (Position.y $ pos $ ball $ status) + ballCenter
+      py = (Position.y $ pos $ ball $ previousStatus) + ballCenter
       boardHeight :: Float
       boardHeight = fromIntegral $ maxHeight $ conf $ status
+      boardWidthCenter = (fromIntegral $ maxWidth $ conf $ status) / 2
       timeStampOk = (time $ status) > (time $ previousStatus)
 
 --speedIntervalCalculation = 
@@ -132,6 +144,8 @@ moveDirection previousStatus status handle currentSpeed = do
             --Attack -> Just(fromIntegral $ positionToDefence status previousStatus)
             Defence -> 
                 Just $ paddlePosition + paddleCenter - (positionToDefence status previousStatus)
+            NearTheWall ->
+                Just $ paddlePosition + paddleCenter - (positionNearTheWall status)                
             WaitForMoreInfo -> 
                 --putStrLn $ "\n Waiting more info... \n"
                 Nothing
