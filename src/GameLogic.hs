@@ -99,31 +99,36 @@ moveDirection previousStatus status handle currentSpeed = do
       Just(pdir)
         | pdir > tolerance -> 
             --putStrLn $ "move up " ++ (show pdir) ++ " a " ++ (show $ Domain.y $ left $ status) ++ " mode "
-            case currentSpeed of
-               (-1.0) -> return currentSpeed 
+            case (currentSpeed, nearTheEdge || inStartPosition) of
+               (-1.0, False) -> return currentSpeed 
                otherwise -> movePaddle handle (-1.0) -- move up
         | pdir < -tolerance ->
-            case currentSpeed of
-               (1.0) -> return currentSpeed
+            case (currentSpeed, nearTheEdge || inStartPosition) of
+               (1.0, False) -> return currentSpeed
                --putStrLn $ "move down "++ (show pdir) ++ " a "  ++ (show $ Domain.y $ left $ status) ++ " mode "
                otherwise -> movePaddle handle (1.0) -- move down
         | otherwise -> 
-            case currentSpeed of
-               (0.0) -> return currentSpeed
+            case (currentSpeed, nearTheEdge || inStartPosition) of
+               (0.0, False) -> return currentSpeed
                --putStrLn $ "stop " ++ (show $ Domain.y $ left $ status) ++ " mode "
                otherwise -> movePaddle handle (0.0) -- stop
     where
+        boardSize = fromIntegral $ maxHeight $ conf $ status
         paddleCenter = fromIntegral (paddleWidth $ conf $ status) /2
         ballSize = fromIntegral $ ballRadius $ conf $ status
         tolerance = case ballSize < 6 of True -> ballSize
                                          False -> 6.0
         paddleMode = selectMode previousStatus status
+        paddlePosition = Domain.y $ left $ status
+        paddleSize = fromIntegral $ paddleHeight $ conf $ status
+        nearTheEdge = paddlePosition < paddleSize || paddlePosition > boardSize - paddleSize * 2
+        inStartPosition = boardSize / 2 == paddlePosition
         paddleDirection = case paddleMode of
             Loiter -> 
-                Just $ (Domain.y $ left $ status) + paddleCenter - (positionToLoiter status)
+                Just $ paddlePosition + paddleCenter - (positionToLoiter status)
             --Attack -> Just(fromIntegral $ positionToDefence status previousStatus)
             Defence -> 
-                Just $ (Domain.y $ left $ status) + paddleCenter - (positionToDefence status previousStatus)
+                Just $ paddlePosition + paddleCenter - (positionToDefence status previousStatus)
             WaitForMoreInfo -> 
                 --putStrLn $ "\n Waiting more info... \n"
                 Nothing
