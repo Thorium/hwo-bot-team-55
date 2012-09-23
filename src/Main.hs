@@ -60,7 +60,7 @@ decodeMessagePair pair handle currentSpeed =
         (Nothing,_) -> fail $ "Error parsing JSON1: " ++ (show $ fst $ pair)
 
 -- <malli-templatesta>
--- Luuppi oli jo templatessa, menkoon taman kerran...
+-- forM_ ei ole luuppi vaan enemmankin map/select/projektio ;-)
 handleMessages handle currentSpeed = do
     lines <- liftM (L.split '\n') $ L.hGetContents handle
     forM_ (messagePairs lines) $ \msg -> do

@@ -50,7 +50,9 @@ positionToLoiter status =
 -- Tarkempi speksi: specs/Defence.png
 positionToDefence :: GameStatus -> GameStatus -> Float
 positionToDefence status previousStatus = 
-    let ballMotionSlope = - (cy - py) / (cx - px) -- suoran yhtalo: kulmakerroin
+    let ballMotionSlope = case (cx - px) of 
+                          0 -> 0
+                          v -> - (cy - py) / v -- suoran yhtalo: kulmakerroin
         positionToHitPaddleWithNoWalls = ballMotionSlope * cx + cy 
         timesToHitWallPositive = truncate (positionToHitPaddleWithNoWalls / boardHeight)
         timesToHitWall = case positionToHitPaddleWithNoWalls < 0 of
