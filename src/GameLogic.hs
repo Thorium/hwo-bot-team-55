@@ -110,8 +110,8 @@ movePaddle handle speed = do
 moveDirection :: GameStatus -> GameStatus -> Handle -> Float -> IO Float
 moveDirection previousStatus status handle currentSpeed = do
     case paddleDirection of
-        Nothing -> 
-            do putStrLn "...wait..."
+        Nothing -> do
+            putStrLn "...wait..."
             return currentSpeed
         Just(pdir)
             | pdir > tolerance -> 

@@ -94,12 +94,12 @@ gameStatusMessage status =
         ++ " Ball at " ++ ballX ++ ", " ++ ballY
         ++ " at time " ++ timestamp
     where leftPlayerName = show $ playerName $ left $ status
-        leftPlayerPosition = show $ Domain.y $ left $ status
-        rightPlayerName = show $ playerName $ right $ status
-        rightPlayerPosition = show $ Domain.y $ right $ status
-        ballX = show $ Position.x $ pos $ ball $ status
-        ballY = show $ Position.y $ pos $ ball $ status
-        timestamp = show $ time $ status
+          leftPlayerPosition = show $ Domain.y $ left $ status
+          rightPlayerName = show $ playerName $ right $ status
+          rightPlayerPosition = show $ Domain.y $ right $ status
+          ballX = show $ Position.x $ pos $ ball $ status
+          ballY = show $ Position.y $ pos $ ball $ status
+          timestamp = show $ time $ status
 
 putStrLnToStderr = hPutStrLn stderr
 -- </malli-templatesta>
