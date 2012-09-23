@@ -25,13 +25,14 @@ p04 = createPosition 400 200  1
 p05 = createPosition 500 200  1
 p06 = createPosition 700 200  1
 
-defenceTest = [(100 == positionToDefence p06 p02),
-               (200 == positionToDefence p04 p01),
-               (100 == positionToDefence p02 p01),
-               (250 == positionToDefence p01 p03),
-               (200 == positionToDefence p02 p04),
-               (100 == positionToDefence p02 p05),
-               (25 == positionToDefence p06 p01)]
+defenceTest = [(100 == positionToDefence p06 p02 True),
+               (200 == positionToDefence p04 p01 True),
+               (100 == positionToDefence p02 p01 True),
+               (250 == positionToDefence p01 p03 True),
+               (200 == positionToDefence p02 p04 True),
+               (100 == positionToDefence p02 p05 True),
+               (25 == positionToDefence p06 p01 True),
+               (125 == positionToDefence p06 p01 False)]
 
 p07 = createPosition 30 10    2
 p08 = createPosition 80 10    1
@@ -57,14 +58,14 @@ instance Show PaddleMode where
    
 modeCheck a1 r1 = (show r1) == (show a1)
                            
-modeTest = [modeCheck Loiter          (selectMode p01 p02),
-            modeCheck Defence         (selectMode p13 p01),
-            modeCheck NearTheWall     (selectMode p08 p07),
-            modeCheck NearTheWall     (selectMode p10 p09),
-            modeCheck WaitForMoreInfo (selectMode p12 p11)]
+modeTest = [modeCheck Loiter          (selectMode p01 p02 False),
+            modeCheck Defence         (selectMode p13 p01 True),
+            modeCheck NearTheWall     (selectMode p08 p07 True),
+            modeCheck NearTheWall     (selectMode p10 p09 True),
+            modeCheck WaitForMoreInfo (selectMode p12 p11 True)]
 
 -- GHCi:
--- defenceTest      [True,True,True,True,True,True,True]
+-- defenceTest      [True,True,True,True,True,True,True,True]
 -- modeTest         [True,True,True,True,True]
 -- nearTheWallTest  [True,True]
 -- loiterTest       [True,True,True,True]

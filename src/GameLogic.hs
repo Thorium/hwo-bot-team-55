@@ -69,7 +69,8 @@ positionToDefence status previousStatus comingMyWay =
         boardHeight = fromIntegral $ maxHeight $ conf $ status :: Float
         boardWidth = fromIntegral $ maxWidth $ conf $ status
         coordinateZero = fromIntegral $ paddleWidth $ conf $ status :: Float
-        cx = case comingMyWay of 
+        -- Voi laskea myos menomatkalla ennakkoon, jos olettaa, että vastustaja on melkein kuin seina...
+        cx = case comingMyWay of  -- kts. /specs/DefenceInAdvance.png
              True -> (Position.x $ pos $ ball $ status :: Float) - coordinateZero
              False -> 2 * boardWidth - (Position.x $ pos $ ball $ status :: Float) - 3 * coordinateZero
         px = case comingMyWay of
