@@ -128,13 +128,13 @@ moveDirection previousStatus status handle currentSpeed = do
                      otherwise -> movePaddle handle (0.0) -- stop
     where
         boardSize = fromIntegral $ maxHeight $ conf $ status
-        paddleCenter = fromIntegral (paddleWidth $ conf $ status) /2
+        paddleSize = fromIntegral $ paddleHeight $ conf $ status
+        paddleCenter = paddleSize /2
         ballSize = fromIntegral $ ballRadius $ conf $ status
         tolerance = case ballSize < 4 of True -> ballSize
                                          False -> 4.0
         paddleMode = selectMode previousStatus status
         paddlePosition = Domain.y $ left $ status
-        paddleSize = fromIntegral $ paddleHeight $ conf $ status
         nearTheEdge = paddlePosition < paddleSize * 1.5 || paddlePosition > boardSize - paddleSize * 2.5
         inStartPosition = boardSize / 2 == paddlePosition
         paddleDirection = case paddleMode of
