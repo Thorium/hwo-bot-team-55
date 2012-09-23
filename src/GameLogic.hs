@@ -1,7 +1,3 @@
--- GHCi: 
--- :cd D:\Muut\gitrepo\pongbot\src\
--- :load GameLogic
-
 -- Pelilogiikka. Best practicet:
 --    - Ei mutable tilaa (vain pakollinen IO).
 --    - Ei if-lauseita: http://www.antiifcampaign.com/
