@@ -48,8 +48,8 @@ positionToLoiter status =
 
 -- Tavoite-Y-positio modelle Defence
 -- Tarkempi speksi: specs/Defence.png
-positionToDefence :: GameStatus -> GameStatus -> Float
-positionToDefence status previousStatus = 
+positionToDefence :: GameStatus -> GameStatus -> Bool -> Float
+positionToDefence status previousStatus comingMyWay = 
     let ballMotionSlope = case (cx - px) of 
                           0 -> 0
                           v -> - (cy - py) / v -- suoran yhtalo: kulmakerroin
@@ -67,23 +67,28 @@ positionToDefence status previousStatus =
         ballSize = fromIntegral $ ballRadius $ conf $ status
         ballCenter = ballSize / 2
         boardHeight = fromIntegral $ maxHeight $ conf $ status :: Float
+        boardWidth = fromIntegral $ maxWidth $ conf $ status
         coordinateZero = fromIntegral $ paddleWidth $ conf $ status :: Float
-        cx = (Position.x $ pos $ ball $ status :: Float) - coordinateZero
-        px = (Position.x $ pos $ ball $ previousStatus :: Float) - coordinateZero
+        cx = case comingMyWay of 
+             True -> (Position.x $ pos $ ball $ status :: Float) - coordinateZero
+             False -> 2 * boardWidth - (Position.x $ pos $ ball $ status :: Float) - 3 * coordinateZero
+        px = case comingMyWay of
+             True -> (Position.x $ pos $ ball $ previousStatus :: Float) - coordinateZero
+             False -> 2 * boardWidth - (Position.x $ pos $ ball $ previousStatus :: Float) - 3 * coordinateZero
         cy = (Position.y $ pos $ ball $ status :: Float) + ballCenter
         py = (Position.y $ pos $ ball $ previousStatus :: Float) + ballCenter
     
 -- Valitaan mika mode on otollisin kyseiselle laudan positiolle
-selectMode :: GameStatus -> GameStatus -> PaddleMode
-selectMode previousStatus status = 
-    let comingMyWay = (px >= cx)
-        distanceTravelled = sqrt((cx - px) ^ 2 + (cy - py) ^2) -- (lähde: Pythagoras, n. 500 eaa)
+selectMode :: GameStatus -> GameStatus -> Bool -> PaddleMode
+selectMode previousStatus status comingMyWay = 
+    let distanceTravelled = sqrt((cx - px) ^ 2 + (cy - py) ^2) -- (lähde: Pythagoras, n. 500 eaa)
         fromBottom = boardHeight - cy
         nearTheWall = (cy < distanceTravelled) || (fromBottom < distanceTravelled)
         boardWidth = maxWidth $ conf $ status
     in
     case (nearTheWall, comingMyWay, timeStampOk) of
         (_, _, False) -> WaitForMoreInfo
+        (False, False, _) -> Defence
         (_, False, _) -> Loiter
         (False, _, _) -> Defence
         (True, _, _) | (cx < myCorner) && comingMyWay -> NearTheWall
@@ -127,13 +132,16 @@ moveDirection previousStatus status handle currentSpeed = do
                      (0.0, False, False) -> return currentSpeed
                      otherwise -> movePaddle handle (0.0) -- stop
     where
+        cx = Position.x $ pos $ ball $ status
+        px = Position.x $ pos $ ball $ previousStatus
+        comingMyWay = (px >= cx)
         boardSize = fromIntegral $ maxHeight $ conf $ status
         paddleSize = fromIntegral $ paddleHeight $ conf $ status
         paddleCenter = paddleSize /2
         ballSize = fromIntegral $ ballRadius $ conf $ status
         tolerance = case ballSize < 4 of True -> ballSize
                                          False -> 4.0
-        paddleMode = selectMode previousStatus status
+        paddleMode = selectMode previousStatus status comingMyWay
         paddlePosition = Domain.y $ left $ status
         nearTheEdge = paddlePosition < paddleSize * 1.5 || paddlePosition > boardSize - paddleSize * 2.5
         inStartPosition = boardSize / 2 == paddlePosition
@@ -141,7 +149,7 @@ moveDirection previousStatus status handle currentSpeed = do
             Loiter -> 
                 Just $ paddlePosition + paddleCenter - (positionToLoiter status)
             Defence -> 
-                Just $ paddlePosition + paddleCenter - (positionToDefence status previousStatus)
+                Just $ paddlePosition + paddleCenter - (positionToDefence status previousStatus comingMyWay)
             NearTheWall ->
                 Just $ paddlePosition + paddleCenter - (positionNearTheWall status)
             WaitForMoreInfo -> 
