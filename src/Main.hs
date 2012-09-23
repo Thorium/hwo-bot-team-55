@@ -12,33 +12,30 @@ import Domain
 import Position
 import GameLogic
 
+data GameType = Battle | Duel
+
 main = do
   getArgs >>= startApplication
 
 startApplication (name:host:port:duel:_) =
-  connectSocket host (read port :: Integer) >>= (startDuel (name,duel))
+  connectSocket host (read port :: Integer) >>= (startGame (name,duel) Duel)
 startApplication (name:host:port:_) =
-  connectSocket host (read port :: Integer) >>= (startGame name)
+  connectSocket host (read port :: Integer) >>= (startGame name Battle)
 startApplication _ =
   getProgName >>=
     (\progName -> putStrLnToStderr $ "\nUsage: " ++ (show progName) ++ " <name> <host> <port> (<duelOpponent>)")
 
 connectSocket host port = connectTo host (PortNumber $ fromInteger port)
 
-startGame name handle = do
-  --putStrLnToStderr $ "\nStarting battle... "
-  send handle "join" name
+startGame names gameType handle = do
+  case gameType of 
+     Battle -> send handle "join" names
+     Duel -> send handle "requestDuel" names
+  putStrLnToStderr $ "Starting..."
   handleMessages handle 0.0
-
-startDuel names handle = do
-  --putStrLnToStderr $ "\nStarting duel... "
-  send handle "requestDuel" names
-  handleMessages handle 0.0
-
 
 messagePairs :: [L.ByteString] -> [(L.ByteString,L.ByteString)]
-messagePairs mylist = 
-    zipWith (,) mylist (tail mylist)
+messagePairs mylist = zipWith (,) mylist (tail mylist)
   
 decodeMessagePair :: (L.ByteString,L.ByteString) -> Handle -> Float -> IO()
 decodeMessagePair pair handle currentSpeed = 
@@ -52,14 +49,13 @@ decodeMessagePair pair handle currentSpeed =
         | messageType == "gameIsOn" -> do
             putStrLn "Got first game on message..."
             putStrLn $ gameStatusMessage $ parseData $ messageData
-            handleMessages handle currentSpeed
+            handleMessages handle 0.0
         | otherwise ->  do
             handleMessage handle messageType messageData
-            handleMessages handle currentSpeed
+            handleMessages handle 0.0
       (Nothing,_) -> fail $ "Error parsing JSON1: " ++ (show $ fst $ pair)
 
 handleMessages handle currentSpeed = do
-
   lines <- liftM (L.split '\n') $ L.hGetContents handle
   -- appendFile "log/lines.txt" (show $ lines)
   forM_ (messagePairs lines) $ \msg -> do
@@ -102,4 +98,3 @@ gameStatusMessage status =
         timestamp = show $ time $ status
 
 putStrLnToStderr = hPutStrLn stderr
-

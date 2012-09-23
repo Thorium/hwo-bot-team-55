@@ -39,7 +39,6 @@ positionToLoiter status =
 -- Paikka johon pallo tulee menemään...
 positionToDefence :: GameStatus -> GameStatus -> Float
 positionToDefence status previousStatus = 
-  -- pallon liike
   let ballMotionSlope = - (cy - py) / (cx - px)
       positionToHitPaddleWithNoWalls = ballMotionSlope * cx + cy
       timesToHitWallPositive = truncate (positionToHitPaddleWithNoWalls / boardHeight)
@@ -61,15 +60,6 @@ positionToDefence status previousStatus =
     cy = (Position.y $ pos $ ball $ status :: Float) + ballCenter
     py = (Position.y $ pos $ ball $ previousStatus :: Float) + ballCenter
     
-{-    
-paddleGoalAttack :: GameStatus -> Float
-paddleGoalAttack = 
-  --     kulma jolla pallo saadaan nurkkaan jossa vastapelaaja ei ole
-  --     tai kulma jolla pallo saadaan n seinän kautta nurkkaan jossa vastapelaaja ei ole
-  --     - Suora on nopein x-suunnassa ilman pomppuja, mutta sivuttaisnopeus pallolle 
-  --       mailan nopeutta suuremmaksi saadaan pompuilla
--}
-  
 selectMode :: GameStatus -> GameStatus -> PaddleMode
 selectMode previousStatus status = 
     let comingMyWay = (px >= cx)
@@ -82,7 +72,7 @@ selectMode previousStatus status =
        (_, _, False) -> WaitForMoreInfo
        (_, False, _) -> Loiter
        (False, _, _) -> Defence
-       (True, _, _) | cx < myCorner -> NearTheWall
+       (True, _, _) | (cx < myCorner) && comingMyWay -> NearTheWall
                     | otherwise -> WaitForMoreInfo
     where 
       ballCenter = (/) ((fromIntegral $ ballRadius $ conf $ status)::Float) 2
@@ -94,11 +84,6 @@ selectMode previousStatus status =
       boardHeight = fromIntegral $ maxHeight $ conf $ status
       myCorner = (fromIntegral $ maxWidth $ conf $ status) / 4
       timeStampOk = (time $ status) > (time $ previousStatus)
-
---speedIntervalCalculation = 
---   nykyinen intervalli miinus aiempi intervalli
---   vauhti jolla haluttu paikka saavutetaan
---   (paikka - nykypaikka) / intervallimuutos 
 
 movePaddle :: Handle -> Float -> IO Float
 movePaddle handle speed = do
@@ -113,7 +98,6 @@ moveDirection previousStatus status handle currentSpeed = do
             return currentSpeed
       Just(pdir)
         | pdir > tolerance -> 
-            --putStrLn $ "move up " ++ (show pdir) ++ " a " ++ (show $ Domain.y $ left $ status) ++ " mode "
             case (currentSpeed, nearTheEdge, inStartPosition) of
                (-1.0, False, False) -> return currentSpeed 
                (_, True, False) -> movePaddle handle (-0.75) 
@@ -122,19 +106,17 @@ moveDirection previousStatus status handle currentSpeed = do
             case (currentSpeed, nearTheEdge, inStartPosition) of
                (1.0, False, False) -> return currentSpeed
                (_, True, False) -> movePaddle handle (0.75)
-               --putStrLn $ "move down "++ (show pdir) ++ " a "  ++ (show $ Domain.y $ left $ status) ++ " mode "
                otherwise -> movePaddle handle (1.0) -- move down
         | otherwise -> 
             case (currentSpeed, nearTheEdge, inStartPosition) of
                (0.0, False, False) -> return currentSpeed
-               --putStrLn $ "stop " ++ (show $ Domain.y $ left $ status) ++ " mode "
                otherwise -> movePaddle handle (0.0) -- stop
     where
         boardSize = fromIntegral $ maxHeight $ conf $ status
         paddleCenter = fromIntegral (paddleWidth $ conf $ status) /2
         ballSize = fromIntegral $ ballRadius $ conf $ status
-        tolerance = case ballSize < 6 of True -> ballSize
-                                         False -> 6.0
+        tolerance = case ballSize < 4 of True -> ballSize
+                                         False -> 4.0
         paddleMode = selectMode previousStatus status
         paddlePosition = Domain.y $ left $ status
         paddleSize = fromIntegral $ paddleHeight $ conf $ status
@@ -143,11 +125,9 @@ moveDirection previousStatus status handle currentSpeed = do
         paddleDirection = case paddleMode of
             Loiter -> 
                 Just $ paddlePosition + paddleCenter - (positionToLoiter status)
-            --Attack -> Just(fromIntegral $ positionToDefence status previousStatus)
             Defence -> 
                 Just $ paddlePosition + paddleCenter - (positionToDefence status previousStatus)
             NearTheWall ->
-                Just $ paddlePosition + paddleCenter - (positionNearTheWall status)                
+                Just $ paddlePosition + paddleCenter - (positionNearTheWall status)
             WaitForMoreInfo -> 
-                --putStrLn $ "\n Waiting more info... \n"
                 Nothing
