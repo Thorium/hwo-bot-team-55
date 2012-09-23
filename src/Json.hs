@@ -8,11 +8,10 @@ import qualified Data.Aeson.Generic as GJ
 
 send :: ToJSON a => Handle -> String -> a -> IO ()
 send handle msgType msgData = do
-  let json = encode $ object ["msgType" .= msgType, "data" .= msgData]
-  --appendFile "log/game.txt" (show $ json)
-  L.hPut handle $ json
-  hPutChar handle '\n'
-  hFlush handle
+    let json = encode $ object ["msgType" .= msgType, "data" .= msgData]
+    L.hPut handle $ json
+    hPutChar handle '\n'
+    hFlush handle
 
 decodeMessage :: (L.ByteString,L.ByteString) -> (Maybe(String,Value),Maybe(String,Value))
 decodeMessage (msg1, msg2) = 
@@ -23,8 +22,8 @@ parseData messageData = fromOk $ GJ.fromJSON messageData
 fromOk (Success x) = x
 
 instance FromJSON (String, Value) where
-  parseJSON (Object v) = do
-    msgType <- v .: "msgType"
-    msgData <- v .: "data"
-    return (msgType, msgData)
-  parseJSON x          = fail $ "Not an JSON object: " ++ (show x)
+    parseJSON (Object v) = do
+        msgType <- v .: "msgType"
+        msgData <- v .: "data"
+        return (msgType, msgData)
+    parseJSON x          = fail $ "Not an JSON object: " ++ (show x)
